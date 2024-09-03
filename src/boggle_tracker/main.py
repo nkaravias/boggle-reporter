@@ -1,4 +1,6 @@
+# src/boggle_tracker/main.py
 import argparse
+import json
 from boggle_tracker.config import load_config
 from boggle_tracker.models.portfolio import Portfolio
 from boggle_tracker.reports.report_factory import ReportFactory
@@ -17,28 +19,46 @@ def load_portfolios(config_path: str):
     return portfolios
 
 
+def load_target_allocation(file_path: str):
+    with open(file_path, 'r') as f:
+        config = json.load(f)
+    return {item['symbol']: item['percentage'] for item in config['target_asset_allocation']}
+
+
 def main():
     parser = argparse.ArgumentParser(description="Boggle Tracker - Portfolio Analysis Tool")
     parser.add_argument("config", help="Path to the data config file")
     parser.add_argument(
         "--report",
-        choices=["generic_overview"],
+        choices=["generic_overview", "target_allocation"],
         default="generic_overview",
         help="Type of report to generate",
     )
     parser.add_argument(
         "--output",
-        choices=["stdout"],
-        default="stdout",
+        choices=["stdout", "rich"],
+        default="rich",
         help="Output type for the report",
+    )
+    parser.add_argument(
+        "--target-allocation",
+        help="Path to the target allocation configuration file (required for target_allocation report)",
     )
 
     args = parser.parse_args()
 
     portfolios = load_portfolios(args.config)
     output = OutputFactory.create(args.output)
-    report = ReportFactory.create(args.report, portfolios, output)
-    report.generate()
+
+    report_kwargs = {}
+    if args.report == "target_allocation":
+        if not args.target_allocation:
+            parser.error("--target-allocation is required when using the target_allocation report")
+        report_kwargs['target_allocation'] = load_target_allocation(args.target_allocation)
+
+    report = ReportFactory.create(args.report, portfolios, **report_kwargs)
+    data = report.generate_data()
+    output.output(data, report.get_report_type())
 
 
 if __name__ == "__main__":
