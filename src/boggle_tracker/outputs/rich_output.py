@@ -14,6 +14,8 @@ class RichOutput(BaseOutput):
             self._output_generic_overview(data)
         elif report_type == "target_allocation":
             self._output_target_allocation(data)
+        elif report_type == "total_target_allocation":
+            self._output_total_target_allocation(data)
         else:
             raise ValueError(f"Unsupported report type: {report_type}")
 
@@ -24,6 +26,79 @@ class RichOutput(BaseOutput):
     def _output_target_allocation(self, data):
         for currency, report_data in data.items():
             self._format_target_allocation_report(currency, report_data)
+
+    def _output_total_target_allocation(self, data):
+        summary, overall_table, detailed_table = self._format_total_target_allocation_report(data)
+        self.console.print(summary)
+        self.console.print(overall_table)
+        self.console.print(detailed_table)
+
+    def _format_total_target_allocation_report(self, data):
+        summary = Text.assemble(
+            ("Total Target Allocation Report\n", "bold"),
+            ("Base Currency: ", "bold"),
+            (f"{data['base_currency']}\n", "cyan"),
+            ("Total Portfolio Value: ", "bold"),
+            (f"${data['total_value']:.2f} {data['base_currency']}", "green")
+        )
+        summary_panel = Panel(summary)
+
+        # Overall Asset Allocation Table
+        overall_table = Table(title="Overall Asset Allocation")
+        overall_table.add_column("Symbol", style="cyan", no_wrap=True)
+        overall_table.add_column("Description", style="magenta")
+        overall_table.add_column("Current Value", style="green")
+        overall_table.add_column("Current %", style="yellow")
+        overall_table.add_column("Target %", style="blue")
+        overall_table.add_column("Difference", style="red")
+        overall_table.add_column("Action", style="bold")
+        overall_table.add_column("Action Value", style="green")
+
+        for symbol, holding_data in data['holdings'].items():
+            overall_table.add_row(
+                symbol,
+                holding_data['description'],
+                f"${holding_data['current_value']:.2f}",
+                f"{holding_data['current_percentage']:.2f}%",
+                f"{holding_data['target_percentage']:.2f}%",
+                f"{holding_data['difference']:+.2f}%",
+                holding_data['action'],
+                f"${holding_data['action_value']:.2f}"
+            )
+
+        other_percentage = (data['other_holdings'] / data['total_value']) * 100
+        overall_table.add_row(
+            "OTHER",
+            "Non-target assets",
+            f"${data['other_holdings']:.2f}",
+            f"{other_percentage:.2f}%",
+            "N/A",
+            "N/A",
+            "N/A",
+            "N/A",
+            style="dim"
+        )
+
+        # Detailed Asset Breakdown Table
+        detailed_table = Table(title="Detailed Asset Breakdown")
+        detailed_table.add_column("Symbol", style="cyan", no_wrap=True)
+        detailed_table.add_column("Market Value", style="green")
+        detailed_table.add_column("Portfolio Name", style="magenta")
+        detailed_table.add_column("Portfolio Total", style="blue")
+        detailed_table.add_column("% of Portfolio", style="yellow")
+
+        for symbol, holdings in data['detailed_holdings'].items():
+            for holding in holdings:
+                portfolio_total = data['portfolio_totals'][holding['portfolio_name']]
+                detailed_table.add_row(
+                    symbol,
+                    f"${holding['market_value']:.2f}",
+                    holding['portfolio_name'],
+                    f"${portfolio_total:.2f}",
+                    f"{holding['portfolio_percentage']:.2f}%"
+                )
+
+        return summary_panel, overall_table, detailed_table
 
     def _format_generic_overview(self, portfolio_name, portfolio_data):
         table = Table(title=f"Portfolio Overview: {portfolio_name}")

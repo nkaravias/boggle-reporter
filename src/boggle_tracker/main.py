@@ -21,8 +21,12 @@ def load_portfolios(config_path: str):
 
 def load_target_allocation(file_path: str):
     with open(file_path, 'r') as f:
-        config = json.load(f)
-    return {item['symbol']: item['percentage'] for item in config['target_asset_allocation']}
+        return json.load(f)
+
+
+def load_exchange_rates(file_path: str):
+    with open(file_path, 'r') as f:
+        return json.load(f)
 
 
 def main():
@@ -30,7 +34,7 @@ def main():
     parser.add_argument("config", help="Path to the data config file")
     parser.add_argument(
         "--report",
-        choices=["generic_overview", "target_allocation"],
+        choices=["generic_overview", "target_allocation", "total_target_allocation"],
         default="generic_overview",
         help="Type of report to generate",
     )
@@ -42,7 +46,11 @@ def main():
     )
     parser.add_argument(
         "--target-allocation",
-        help="Path to the target allocation configuration file (required for target_allocation report)",
+        help="Path to the target allocation configuration file (required for target_allocation and total_target_allocation reports)",
+    )
+    parser.add_argument(
+        "--exchange-rates",
+        help="Path to the exchange rates configuration file (required for total_target_allocation report)",
     )
 
     args = parser.parse_args()
@@ -51,10 +59,15 @@ def main():
     output = OutputFactory.create(args.output)
 
     report_kwargs = {}
-    if args.report == "target_allocation":
+    if args.report in ["target_allocation", "total_target_allocation"]:
         if not args.target_allocation:
-            parser.error("--target-allocation is required when using the target_allocation report")
+            parser.error(f"--target-allocation is required for {args.report} report")
         report_kwargs['target_allocation'] = load_target_allocation(args.target_allocation)
+
+    if args.report == "total_target_allocation":
+        if not args.exchange_rates:
+            parser.error("--exchange-rates is required for total_target_allocation report")
+        report_kwargs['exchange_rates'] = load_exchange_rates(args.exchange_rates)
 
     report = ReportFactory.create(args.report, portfolios, **report_kwargs)
     data = report.generate_data()

@@ -7,6 +7,8 @@ class StdoutOutput(BaseOutput):
             self._output_generic_overview(data)
         elif report_type == "target_allocation":
             self._output_target_allocation(data)
+        elif report_type == "total_target_allocation":
+            self._output_total_target_allocation(data)
         else:
             raise ValueError(f"Unsupported report type: {report_type}")
 
@@ -46,3 +48,27 @@ class StdoutOutput(BaseOutput):
                     f"{symbol:<10} ${value:<14.2f} {current_percentage:18.2f}% {target_percentage:18.2f}% {difference:+14.2f}%"
                 )
             print("\n")
+
+    def _output_total_target_allocation(self, data):
+        print(f"Total Target Allocation Report")
+        print(f"Base Currency: {data['base_currency']}")
+        print(f"Total Portfolio Value: ${data['total_value']:.2f} {data['base_currency']}\n")
+
+        print("Overall Asset Allocation")
+        print(f"{'Symbol':<10} {'Description':<25} {'Current Value':<15} {'Current %':<10} {'Target %':<10} {'Difference':<12} {'Action':<6} {'Action Value'}")
+        print("-" * 100)
+        for symbol, holding_data in data['holdings'].items():
+            print(f"{symbol:<10} {holding_data['description']:<25} ${holding_data['current_value']:<14.2f} {holding_data['current_percentage']:9.2f}% {holding_data['target_percentage']:9.2f}% {holding_data['difference']:+11.2f}% {holding_data['action']:<6} ${holding_data['action_value']:.2f}")
+
+        other_percentage = (data['other_holdings'] / data['total_value']) * 100
+        print(f"{'OTHER':<10} {'Non-target assets':<25} ${data['other_holdings']:<14.2f} {other_percentage:9.2f}% {'N/A':9} {'N/A':11} {'N/A':<6} {'N/A'}")
+        print("\n")
+
+        print("Detailed Asset Breakdown")
+        print(f"{'Symbol':<10} {'Market Value':<15} {'Portfolio Name':<25} {'Portfolio Total':<20} {'% of Portfolio'}")
+        print("-" * 95)
+        for symbol, holdings in data['detailed_holdings'].items():
+            for holding in holdings:
+                portfolio_total = data['portfolio_totals'][holding['portfolio_name']]
+                print(f"{symbol:<10} ${holding['market_value']:<14.2f} {holding['portfolio_name']:<25} ${portfolio_total:<19.2f} {holding['portfolio_percentage']:9.2f}%")
+        print("\n")
