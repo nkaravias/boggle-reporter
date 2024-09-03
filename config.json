@@ -1,0 +1,20 @@
+{
+    "portfolios": [
+      {
+        "name": "RRSP (USD)",
+        "csv_path": "resources/rrsp_usd.csv",
+        "currency": "USD"
+        
+      },
+      {
+        "name": "Self-directed (CAD)",
+        "csv_path": "resources/self_directed_cad.csv",
+        "currency": "CAD"
+      },
+      {
+        "name": "Self-directed (USD)",
+        "csv_path": "resources/self_directed_usd.csv",
+        "currency": "USD"
+      }
+    ]
+  }
