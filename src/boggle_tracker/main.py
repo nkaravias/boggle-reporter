@@ -34,7 +34,7 @@ def main():
     parser.add_argument("config", help="Path to the data config file")
     parser.add_argument(
         "--report",
-        choices=["generic_overview", "target_allocation", "total_target_allocation"],
+        choices=["generic_overview", "target_allocation", "total_target_allocation", "calculate_contributions"],
         default="generic_overview",
         help="Type of report to generate",
     )
@@ -46,11 +46,16 @@ def main():
     )
     parser.add_argument(
         "--target-allocation",
-        help="Path to the target allocation configuration file (required for target_allocation and total_target_allocation reports)",
+        help="Path to the target allocation configuration file (required for target_allocation, total_target_allocation, and calculate_contributions reports)",
     )
     parser.add_argument(
         "--exchange-rates",
         help="Path to the exchange rates configuration file (required for total_target_allocation report)",
+    )
+    parser.add_argument(
+        "--investment-amount",
+        type=float,
+        help="Investment amount (required for calculate_contributions report)",
     )
 
     args = parser.parse_args()
@@ -59,7 +64,7 @@ def main():
     output = OutputFactory.create(args.output)
 
     report_kwargs = {}
-    if args.report in ["target_allocation", "total_target_allocation"]:
+    if args.report in ["target_allocation", "total_target_allocation", "calculate_contributions"]:
         if not args.target_allocation:
             parser.error(f"--target-allocation is required for {args.report} report")
         report_kwargs['target_allocation'] = load_target_allocation(args.target_allocation)
@@ -68,6 +73,11 @@ def main():
         if not args.exchange_rates:
             parser.error("--exchange-rates is required for total_target_allocation report")
         report_kwargs['exchange_rates'] = load_exchange_rates(args.exchange_rates)
+
+    if args.report == "calculate_contributions":
+        if args.investment_amount is None:
+            parser.error("--investment-amount is required for calculate_contributions report")
+        report_kwargs['investment_amount'] = args.investment_amount
 
     report = ReportFactory.create(args.report, portfolios, **report_kwargs)
     data = report.generate_data()
