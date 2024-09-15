@@ -9,6 +9,8 @@ class StdoutOutput(BaseOutput):
             self._output_target_allocation(data)
         elif report_type == "total_target_allocation":
             self._output_total_target_allocation(data)
+        elif report_type == "calculate_contributions":
+            self._output_calculate_contributions(data)
         else:
             raise ValueError(f"Unsupported report type: {report_type}")
 
@@ -71,4 +73,12 @@ class StdoutOutput(BaseOutput):
             for holding in holdings:
                 portfolio_total = data['portfolio_totals'][holding['portfolio_name']]
                 print(f"{symbol:<10} ${holding['market_value']:<14.2f} {holding['portfolio_name']:<25} ${portfolio_total:<19.2f} {holding['portfolio_percentage']:9.2f}%")
+        print("\n")
+
+    def _output_calculate_contributions(self, data):
+        print(f"Investment Amount: ${data['investment_amount']:.2f}\n")
+        print(f"{'Symbol':<10} {'Description':<25} {'Percentage':<15} {'Amount'}")
+        print("-" * 65)
+        for symbol, contribution in data['contributions'].items():
+            print(f"{symbol:<10} {contribution['description']:<25} {contribution['percentage']:13.2f}% ${contribution['amount']:.2f}")
         print("\n")
